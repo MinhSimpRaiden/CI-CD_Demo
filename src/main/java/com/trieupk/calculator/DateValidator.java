@@ -16,7 +16,7 @@ public class DateValidator {
     public static final int MIN_MONTH = 1;
     public static final int MAX_MONTH = 12;
     public static final int MIN_YEAR = 1000;
-    public static final int MAX_YEAR = 2000;
+    public static final int MAX_YEAR = 3000;
 
     /**
      * Checks whether the given day, month, and year fall within the allowed ranges.

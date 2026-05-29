@@ -5,7 +5,8 @@ import java.time.LocalDate;
 
 /**
  * Utility class for validating date inputs.
- * Validates that Day is in [1, 31], Month is in [1, 12], Year is in [1000, 3000],
+ * Validates that Day is in [1, 31], Month is in [1, 12], Year is in [1000,
+ * 3000],
  * and that the date actually exists in the Gregorian calendar.
  */
 public class DateValidator {
@@ -15,7 +16,7 @@ public class DateValidator {
     public static final int MIN_MONTH = 1;
     public static final int MAX_MONTH = 12;
     public static final int MIN_YEAR = 1000;
-    public static final int MAX_YEAR = 3000;
+    public static final int MAX_YEAR = 2000;
 
     /**
      * Checks whether the given day, month, and year fall within the allowed ranges.
@@ -59,7 +60,8 @@ public class DateValidator {
      * @param dayStr   the day as a string
      * @param monthStr the month as a string
      * @param yearStr  the year as a string
-     * @return a message indicating whether the date is valid or describing the error
+     * @return a message indicating whether the date is valid or describing the
+     *         error
      */
     public String getValidationMessage(String dayStr, String monthStr, String yearStr) {
         int day, month, year;

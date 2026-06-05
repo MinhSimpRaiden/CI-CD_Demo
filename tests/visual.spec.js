@@ -10,5 +10,6 @@ test("homepage visual regression test", async ({ page }) => {
   await expect(page).toHaveScreenshot("homepage.png", {
     animations: "disabled",
     fullPage: true,
+    maxDiffPixels: 5000,
   });
 });

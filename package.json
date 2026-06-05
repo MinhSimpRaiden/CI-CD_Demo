@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test:visual": "playwright test --project=chromium",
+    "test:visual:update": "playwright test --project=chromium --update-snapshots"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JohnPham666/DateTimeChecker.git"

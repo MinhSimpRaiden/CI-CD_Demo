@@ -11,7 +11,8 @@ export const options = {
 };
 
 export default function () {
-  const res = http.get("http://localhost:8080");
+  const baseUrl = __ENV.BASE_URL || "http://localhost:8080";
+  const res = http.get(baseUrl);
 
   check(res, {
     "status is 200": (r) => r.status === 200,

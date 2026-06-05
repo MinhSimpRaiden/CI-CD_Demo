@@ -36,43 +36,66 @@ jobs:
       - name: Run Maven tests
         run: .\mvnw.cmd clean test
 
+      - name: Package application
+        run: .\mvnw.cmd -DskipTests package
+
       - name: Set up k6
         uses: grafana/setup-k6-action@v1
 
-      - name: Start Spring Boot application
+      - name: Run performance and visual regression tests
         shell: pwsh
+        env:
+          BASE_URL: http://localhost:8080
         run: |
-          $process = Start-Process -FilePath ".\mvnw.cmd" -ArgumentList "spring-boot:run" -PassThru -RedirectStandardOutput app.log -RedirectStandardError app-error.log
-          "APP_PID=$($process.Id)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          for ($i = 0; $i -lt 60; $i++) {
-            try {
-              $response = Invoke-WebRequest -Uri "http://localhost:8080" -UseBasicParsing -TimeoutSec 2
-              if ($response.StatusCode -eq 200) {
-                Write-Host "Spring Boot application is running on port 8080."
-                Start-Sleep -Seconds 5
-                exit 0
-              }
-            } catch {
-              Write-Host "Waiting for Spring Boot application..."
-              Start-Sleep -Seconds 2
-            }
+          $artifact = Get-ChildItem -Path "target" -Filter "*.war" | Select-Object -First 1
+          if (-not $artifact) {
+            throw "No WAR artifact found in target."
           }
 
-          Write-Host "Spring Boot application failed to start."
-          Get-Content app.log
-          Get-Content app-error.log
-          exit 1
+          $process = Start-Process -FilePath "java" -ArgumentList "-jar", $artifact.FullName -PassThru -RedirectStandardOutput app.log -RedirectStandardError app-error.log
+          try {
+            $ready = $false
+            for ($i = 0; $i -lt 60; $i++) {
+              if ($process.HasExited) {
+                Get-Content app.log -ErrorAction SilentlyContinue
+                Get-Content app-error.log -ErrorAction SilentlyContinue
+                throw "Spring Boot application exited before it became ready."
+              }
 
-      - name: Run performance test with k6
-        env:
-          BASE_URL: http://localhost:8080
-        run: k6 run performance/load-test.js
+              try {
+                $response = Invoke-WebRequest -Uri $env:BASE_URL -UseBasicParsing -TimeoutSec 2
+                if ($response.StatusCode -eq 200) {
+                  Write-Host "Spring Boot application is running on $env:BASE_URL."
+                  $ready = $true
+                  break
+                }
+              } catch {
+                Write-Host "Waiting for Spring Boot application..."
+                Start-Sleep -Seconds 2
+              }
+            }
 
-      - name: Run visual regression test with Playwright
-        env:
-          BASE_URL: http://localhost:8080
-        run: npm.cmd run test:visual
+            if (-not $ready) {
+              Get-Content app.log -ErrorAction SilentlyContinue
+              Get-Content app-error.log -ErrorAction SilentlyContinue
+              throw "Spring Boot application failed to start."
+            }
+
+            Start-Sleep -Seconds 5
+            k6 run performance/load-test.js
+            if ($LASTEXITCODE -ne 0) {
+              throw "k6 performance test failed with exit code $LASTEXITCODE."
+            }
+
+            npm.cmd run test:visual
+            if ($LASTEXITCODE -ne 0) {
+              throw "Playwright visual regression test failed with exit code $LASTEXITCODE."
+            }
+          } finally {
+            if ($process -and -not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
 
       - name: Upload Playwright report
         if: always()
@@ -99,11 +122,3 @@ jobs:
             app.log
             app-error.log
           if-no-files-found: ignore
-
-      - name: Stop Spring Boot application
-        if: always()
-        shell: pwsh
-        run: |
-          if ($env:APP_PID) {
-            Stop-Process -Id $env:APP_PID -Force -ErrorAction SilentlyContinue
-          }

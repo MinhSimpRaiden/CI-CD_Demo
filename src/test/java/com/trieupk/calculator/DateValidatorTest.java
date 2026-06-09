@@ -3,6 +3,8 @@ package com.trieupk.calculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -18,6 +20,62 @@ class DateValidatorTest {
     @BeforeEach
     void setUp() {
         validator = new DateValidator();
+    }
+
+    // ===== Lab 3: DayInMonth Function =====
+
+    @ParameterizedTest(name = "TC-DIM-{index}: month={0}, year={1} => {2} days")
+    @CsvSource({
+            "1, 2024, 31",
+            "3, 2024, 31",
+            "5, 2024, 31",
+            "7, 2024, 31",
+            "8, 2024, 31",
+            "10, 2024, 31",
+            "12, 2024, 31",
+            "4, 2024, 30",
+            "6, 2024, 30",
+            "9, 2024, 30",
+            "11, 2024, 30",
+            "2, 2024, 29",
+            "2, 2000, 29",
+            "2, 2023, 28",
+            "2, 1900, 28",
+            "0, 2024, 0",
+            "13, 2024, 0",
+            "2, 999, 0",
+            "2, 3001, 0"
+    })
+    @DisplayName("DayInMonth returns expected days for normal, leap, and boundary cases")
+    void testDayInMonth(int month, int year, int expectedDays) {
+        assertEquals(expectedDays, validator.dayInMonth(month, year));
+    }
+
+    // ===== Lab 3: CheckDate Function =====
+
+    @ParameterizedTest(name = "TC-CD-{index}: day={0}, month={1}, year={2} => valid={3}")
+    @CsvSource({
+            "1, 1, 2024, true",
+            "31, 1, 2024, true",
+            "30, 4, 2024, true",
+            "31, 4, 2024, false",
+            "29, 2, 2024, true",
+            "29, 2, 2000, true",
+            "29, 2, 2023, false",
+            "29, 2, 1900, false",
+            "28, 2, 2023, true",
+            "0, 1, 2024, false",
+            "32, 1, 2024, false",
+            "15, 0, 2024, false",
+            "15, 13, 2024, false",
+            "15, 1, 999, false",
+            "15, 1, 3001, false",
+            "31, 12, 3000, true",
+            "1, 1, 1000, true"
+    })
+    @DisplayName("CheckDate validates valid dates, invalid dates, and boundary values")
+    void testCheckDate(int day, int month, int year, boolean expectedValid) {
+        assertEquals(expectedValid, validator.checkDate(day, month, year));
     }
 
     // ===== Valid Dates =====

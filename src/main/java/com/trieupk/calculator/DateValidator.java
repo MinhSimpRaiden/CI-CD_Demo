@@ -33,6 +33,27 @@ public class DateValidator {
     }
 
     /**
+     * Returns the number of days in a month for the given year.
+     * Returns 0 when month or year is outside the accepted input range.
+     *
+     * @param month the month value
+     * @param year  the year value
+     * @return number of days in the month, or 0 for invalid month/year
+     */
+    public int dayInMonth(int month, int year) {
+        if (month < MIN_MONTH || month > MAX_MONTH || year < MIN_YEAR || year > MAX_YEAR) {
+            return 0;
+        }
+
+        return switch (month) {
+            case 1, 3, 5, 7, 8, 10, 12 -> 31;
+            case 4, 6, 9, 11 -> 30;
+            case 2 -> isLeapYear(year) ? 29 : 28;
+            default -> 0;
+        };
+    }
+
+    /**
      * Checks whether the given day, month, and year form a valid date
      * in the Gregorian calendar. This method first checks ranges,
      * then verifies the date exists (e.g., Feb 29 only in leap years).
@@ -52,6 +73,27 @@ public class DateValidator {
         } catch (DateTimeException e) {
             return false;
         }
+    }
+
+    /**
+     * Lab function for checking whether day, month, and year form a valid date.
+     *
+     * @param day   the day value
+     * @param month the month value
+     * @param year  the year value
+     * @return true if the date is valid
+     */
+    public boolean checkDate(int day, int month, int year) {
+        if (day < MIN_DAY || day > MAX_DAY) {
+            return false;
+        }
+
+        int maxDay = dayInMonth(month, year);
+        return maxDay > 0 && day <= maxDay;
+    }
+
+    private boolean isLeapYear(int year) {
+        return year % 400 == 0 || (year % 4 == 0 && year % 100 != 0);
     }
 
     /**

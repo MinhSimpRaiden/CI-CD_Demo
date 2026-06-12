@@ -1,0 +1,44 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-test-package:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run Maven tests
+        run: .\mvnw.cmd clean test
+
+      - name: Package application
+        run: .\mvnw.cmd -DskipTests package
+
+      - name: Verify build artifact
+        shell: pwsh
+        run: |
+          $artifact = Get-ChildItem -Path "target" -Filter "*.war" | Select-Object -First 1
+          if (-not $artifact) {
+            throw "No WAR artifact found in target."
+          }
+          Write-Host "Build artifact created: $($artifact.FullName)"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: datetimechecker-war
+          path: target/*.war
+          if-no-files-found: error

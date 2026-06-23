@@ -25,12 +25,43 @@ jobs:
     - name: Build Spring Boot Application
       run: .\mvnw.cmd clean package -DskipTests
 
-    - name: Start Spring Boot Application
+    - name: Start Spring Boot Application and Wait
       run: |
         $warFile = Get-ChildItem -Path target/*.war | Select-Object -First 1
-        Start-Process -FilePath "java" -ArgumentList "-jar", $warFile.FullName -NoNewWindow -PassThru
-        Write-Host "Waiting for Spring Boot to start..."
-        Start-Sleep -Seconds 15
+        if (-not $warFile) { throw "No .war file found in target directory!" }
+        
+        Write-Host "Starting Spring Boot: $($warFile.FullName)"
+        # Chạy ngầm và xuất log ra file để bắt bệnh nếu crash
+        Start-Process -FilePath "java" -ArgumentList "-jar", $warFile.FullName -RedirectStandardOutput "spring.log" -RedirectStandardError "spring_err.log" -NoNewWindow
+        
+        $maxRetries = 30
+        $retryCount = 0
+        $serverUp = $false
+        
+        Write-Host "Waiting for Spring Boot to start on port 8080..."
+        while ($retryCount -lt $maxRetries) {
+            try {
+                $response = Invoke-WebRequest -Uri http://localhost:8080 -UseBasicParsing -ErrorAction Stop
+                if ($response.StatusCode -eq 200) {
+                    Write-Host "✅ Spring Boot is UP and Running!"
+                    $serverUp = $true
+                    break
+                }
+            } catch {
+                Write-Host "Waiting... ($retryCount/$maxRetries)"
+                Start-Sleep -Seconds 2
+            }
+            $retryCount++
+        }
+        
+        if (-not $serverUp) {
+            Write-Host "❌ Spring Boot failed to start in time. Printing logs:"
+            Write-Host "--- STANDARD OUTPUT ---"
+            if (Test-Path spring.log) { Get-Content spring.log }
+            Write-Host "--- STANDARD ERROR ---"
+            if (Test-Path spring_err.log) { Get-Content spring_err.log }
+            exit 1
+        }
 
     - name: Setup Node.js 20
       uses: actions/setup-node@v4

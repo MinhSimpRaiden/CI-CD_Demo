@@ -44,10 +44,10 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
 
-    - name: Run Playwright Visual Test
+    - name: Run Playwright Visual Test (Explicit File)
       run: npx playwright test tests/visual.spec.js --project=chromium
 
-    - name: Upload Playwright Report
+    - name: Upload Playwright Visual Report
       uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
